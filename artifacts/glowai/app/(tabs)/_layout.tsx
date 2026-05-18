@@ -8,10 +8,8 @@ import React from "react";
 import {
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,12 +25,12 @@ function ScanFAB() {
       activeOpacity={0.85}
     >
       <LinearGradient
-        colors={["#7B61FF", "#A58BFF"]}
+        colors={["#00D4FF", "#00A8CC"]}
         style={styles.fab}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Ionicons name="scan-outline" size={26} color="white" />
+        <Ionicons name="scan-outline" size={26} color="#000" />
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -63,10 +61,6 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
   const insets = useSafeAreaInsets();
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -74,22 +68,22 @@ function ClassicTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarActiveTintColor: "#00D4FF",
+        tabBarInactiveTintColor: "#3A506B",
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.card,
+          backgroundColor: Platform.OS === "ios" ? "transparent" : "#080E1A",
           borderTopWidth: 1,
-          borderTopColor: colors.border,
+          borderTopColor: "rgba(0,212,255,0.15)",
           elevation: 0,
           height: TAB_HEIGHT + bottomInset,
           paddingBottom: bottomInset,
         },
         tabBarBackground: () =>
-          isIOS ? (
+          Platform.OS === "ios" ? (
             <BlurView
               intensity={90}
-              tint={isDark ? "dark" : "systemChromeMaterial"}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
           ) : null,
@@ -105,11 +99,7 @@ function ClassicTabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "home" : "home-outline"}
-              size={22}
-              color={color}
-            />
+            <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
           ),
         }}
       />
@@ -118,11 +108,7 @@ function ClassicTabLayout() {
         options={{
           title: "Progress",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "bar-chart" : "bar-chart-outline"}
-              size={22}
-              color={color}
-            />
+            <Ionicons name={focused ? "bar-chart" : "bar-chart-outline"} size={22} color={color} />
           ),
         }}
       />
@@ -152,11 +138,7 @@ function ClassicTabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "person" : "person-outline"}
-              size={22}
-              color={color}
-            />
+            <Ionicons name={focused ? "person" : "person-outline"} size={22} color={color} />
           ),
         }}
       />
@@ -165,9 +147,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
+  if (isLiquidGlassAvailable()) return <NativeTabLayout />;
   return <ClassicTabLayout />;
 }
 
@@ -183,9 +163,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7B61FF",
+    shadowColor: "#00D4FF",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 10,
   },

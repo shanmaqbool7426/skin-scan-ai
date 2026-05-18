@@ -3,7 +3,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
-  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -20,15 +19,15 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 
 const quickActions = [
-  { icon: "scan-outline" as const, label: "Scan Skin", route: "/scan" as const },
-  { icon: "flask-outline" as const, label: "Ingredients", route: "/ingredient-scanner" as const },
-  { icon: "calendar-outline" as const, label: "Routine", route: "/routine" as const },
-  { icon: "bag-outline" as const, label: "Products", route: "/products" as const },
+  { icon: "scan-outline" as const, label: "Skin Scan", route: "/scan" as const, color: "#00D4FF" },
+  { icon: "flask-outline" as const, label: "Ingredients", route: "/ingredient-scanner" as const, color: "#7B61FF" },
+  { icon: "journal-outline" as const, label: "Skin Diary", route: "/skin-diary" as const, color: "#00FFA3" },
+  { icon: "bag-outline" as const, label: "Products", route: "/products" as const, color: "#FFB800" },
 ];
 
 const reminders = [
   { icon: "water-outline" as const, text: "Drink 8 glasses of water today", color: "#3B82F6" },
-  { icon: "sunny-outline" as const, text: "Apply SPF 50 before going out", color: "#F59E0B" },
+  { icon: "sunny-outline" as const, text: "Apply SPF 50 before going out", color: "#FFB800" },
 ];
 
 export default function HomeScreen() {
@@ -44,23 +43,34 @@ export default function HomeScreen() {
       contentContainerStyle={{ paddingTop: topPad + 16, paddingBottom: bottomPad }}
       showsVerticalScrollIndicator={false}
     >
+      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
-            Hello, {user.name.split(" ")[0]} 👋
+            Hello, {user.name.split(" ")[0]}
           </Text>
           <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-            Ready to glow today?
+            Skin Diagnostics
           </Text>
         </View>
-        <TouchableOpacity onPress={() => router.push("/premium")} style={[styles.premiumBadge, { backgroundColor: colors.lavender }]}>
-          <Ionicons name="crown-outline" size={14} color={colors.primary} />
-          <Text style={[styles.premiumText, { color: colors.primary }]}>Premium</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/premium")}
+          style={styles.premiumBadge}
+        >
+          <LinearGradient
+            colors={["rgba(0,212,255,0.2)", "rgba(123,97,255,0.2)"]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={styles.premiumBadgeInner}
+          >
+            <Ionicons name="crown-outline" size={12} color="#00D4FF" />
+            <Text style={[styles.premiumText, { color: "#00D4FF" }]}>Premium</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      {latestScan && (
-        <GlassCard style={styles.scoreCard}>
+      {/* Score card */}
+      {latestScan ? (
+        <GlassCard style={styles.scoreCard} glow>
           <View style={styles.scoreRow}>
             <GlowScoreRing score={latestScan.glowScore} size={120} />
             <View style={styles.scoreRight}>
@@ -70,81 +80,106 @@ export default function HomeScreen() {
               <Text style={[styles.scoreImprove, { color: colors.success }]}>
                 +12% from last month
               </Text>
-              <View style={[styles.tipBubble, { backgroundColor: colors.lavender }]}>
-                <Ionicons name="bulb-outline" size={14} color={colors.primary} />
-                <Text style={[styles.tipText, { color: colors.primary }]}>
-                  Drink more water today
+              <View style={styles.tipBubble}>
+                <Ionicons name="bulb-outline" size={13} color="#00D4FF" />
+                <Text style={[styles.tipText, { color: colors.foreground }]}>
+                  Increase hydration intake
                 </Text>
               </View>
             </View>
           </View>
         </GlassCard>
+      ) : (
+        <TouchableOpacity onPress={() => router.push("/scan")} activeOpacity={0.88}>
+          <GlassCard style={styles.noScanCard} glow>
+            <View style={styles.noScanContent}>
+              <View style={styles.noScanIcon}>
+                <Ionicons name="scan-outline" size={28} color="#00D4FF" />
+              </View>
+              <View>
+                <Text style={[styles.noScanTitle, { color: colors.foreground }]}>No scan yet</Text>
+                <Text style={[styles.noScanSub, { color: colors.mutedForeground }]}>Run your first AI skin analysis</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#00D4FF" />
+            </View>
+          </GlassCard>
+        </TouchableOpacity>
       )}
 
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
+      {/* Quick Actions */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Access</Text>
+        <View style={styles.sectionDivider} />
+      </View>
       <View style={styles.actionsGrid}>
         {quickActions.map((a, i) => (
           <TouchableOpacity
             key={i}
-            style={[styles.actionItem, { backgroundColor: colors.card }]}
+            style={[styles.actionItem, { backgroundColor: colors.card, borderColor: `${a.color}20` }]}
             onPress={() => router.push(a.route as any)}
             activeOpacity={0.75}
           >
-            <View style={[styles.actionIcon, { backgroundColor: colors.lavender }]}>
-              <Ionicons name={a.icon} size={22} color={colors.primary} />
+            <View style={[styles.actionIcon, { backgroundColor: `${a.color}12`, borderColor: `${a.color}25` }]}>
+              <Ionicons name={a.icon} size={22} color={a.color} />
             </View>
             <Text style={[styles.actionLabel, { color: colors.foreground }]}>{a.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
+      {/* Skin Metrics */}
       {latestScan && (
         <>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Skin Metrics</Text>
             <TouchableOpacity onPress={() => router.push("/(tabs)/progress")}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>Full Report</Text>
             </TouchableOpacity>
           </View>
           <GlassCard style={styles.metricsCard}>
-            <MetricBar label="Hydration" value={latestScan.hydration} color={colors.info} />
-            <MetricBar label="Clarity" value={latestScan.clarity} color={colors.primary} />
-            <MetricBar label="Smoothness" value={latestScan.smoothness} color={colors.success} />
-            <MetricBar label="Glow" value={latestScan.glow} color={colors.accent} />
+            <MetricBar label="Hydration" value={latestScan.hydration} color="#00D4FF" />
+            <MetricBar label="Clarity" value={latestScan.clarity} color="#7B61FF" />
+            <MetricBar label="Smoothness" value={latestScan.smoothness} color="#00FFA3" />
+            <MetricBar label="Glow Index" value={latestScan.glow} color="#FFB800" />
           </GlassCard>
         </>
       )}
 
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Reminders</Text>
+      {/* Reminders */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Reminders</Text>
+      </View>
       {reminders.map((r, i) => (
         <GlassCard key={i} style={styles.reminderCard} padding={14}>
           <View style={styles.reminderRow}>
-            <View style={[styles.reminderIcon, { backgroundColor: `${r.color}15` }]}>
-              <Ionicons name={r.icon} size={20} color={r.color} />
+            <View style={[styles.reminderIcon, { backgroundColor: `${r.color}18` }]}>
+              <Ionicons name={r.icon} size={18} color={r.color} />
             </View>
             <Text style={[styles.reminderText, { color: colors.foreground }]}>{r.text}</Text>
-            <Ionicons name="checkmark-circle-outline" size={22} color={colors.border} />
+            <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
           </View>
         </GlassCard>
       ))}
 
+      {/* Progress teaser */}
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Your Progress</Text>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>30-Day Progress</Text>
         <TouchableOpacity onPress={() => router.push("/(tabs)/progress")}>
-          <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
+          <Text style={[styles.seeAll, { color: colors.primary }]}>View All</Text>
         </TouchableOpacity>
       </View>
-      <GlassCard style={styles.progressTeaser}>
+      <GlassCard style={styles.progressTeaser} glow>
         <View style={styles.progressTeaserRow}>
           <Text style={[styles.progressBig, { color: colors.primary }]}>+38%</Text>
           <View style={styles.progressTeaserRight}>
             <Text style={[styles.progressDesc, { color: colors.foreground }]}>Improvement</Text>
             <Text style={[styles.progressSub, { color: colors.mutedForeground }]}>from last month</Text>
           </View>
+          <View style={[styles.trendBadge, { backgroundColor: "rgba(0,232,122,0.12)" }]}>
+            <Ionicons name="trending-up-outline" size={14} color={colors.success} />
+            <Text style={[styles.trendText, { color: colors.success }]}>Optimal</Text>
+          </View>
         </View>
-        <Text style={[styles.progressCaption, { color: colors.success }]}>
-          Your skin is healthy & glowing ✦
-        </Text>
       </GlassCard>
     </ScrollView>
   );
@@ -153,84 +188,80 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    flexDirection: "row", justifyContent: "space-between",
+    alignItems: "flex-start", paddingHorizontal: 20, marginBottom: 20,
   },
-  greeting: { fontSize: 14, fontFamily: "Poppins_400Regular", marginBottom: 2 },
-  headerTitle: { fontSize: 20, fontFamily: "Poppins_700Bold" },
-  premiumBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+  greeting: { fontSize: 13, fontFamily: "Poppins_400Regular", marginBottom: 2, letterSpacing: 0.5 },
+  headerTitle: { fontSize: 22, fontFamily: "Poppins_700Bold", letterSpacing: 0.5 },
+  premiumBadge: { borderRadius: 10, overflow: "hidden", marginTop: 4 },
+  premiumBadgeInner: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 10, paddingVertical: 6,
+    borderWidth: 1, borderColor: "rgba(0,212,255,0.25)", borderRadius: 10,
   },
   premiumText: { fontSize: 12, fontFamily: "Poppins_600SemiBold" },
   scoreCard: { marginHorizontal: 20, marginBottom: 24 },
+  noScanCard: { marginHorizontal: 20, marginBottom: 24 },
+  noScanContent: { flexDirection: "row", alignItems: "center", gap: 14 },
+  noScanIcon: {
+    width: 52, height: 52, borderRadius: 14,
+    backgroundColor: "rgba(0,212,255,0.1)",
+    borderWidth: 1, borderColor: "rgba(0,212,255,0.25)",
+    alignItems: "center", justifyContent: "center",
+  },
+  noScanTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
+  noScanSub: { fontFamily: "Poppins_400Regular", fontSize: 12, marginTop: 2 },
   scoreRow: { flexDirection: "row", alignItems: "center", gap: 20 },
-  scoreRight: { flex: 1 },
-  scoreLabel: { fontSize: 13, fontFamily: "Poppins_400Regular", marginBottom: 4 },
-  scoreImprove: { fontSize: 13, fontFamily: "Poppins_600SemiBold", marginBottom: 10 },
+  scoreRight: { flex: 1, gap: 6 },
+  scoreLabel: { fontSize: 12, fontFamily: "Poppins_400Regular", letterSpacing: 0.5 },
+  scoreImprove: { fontSize: 13, fontFamily: "Poppins_600SemiBold" },
   tipBubble: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "rgba(0,212,255,0.08)",
+    borderWidth: 1, borderColor: "rgba(0,212,255,0.15)",
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
+    marginTop: 2,
   },
   tipText: { fontSize: 11, fontFamily: "Poppins_500Medium", flex: 1 },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: "Poppins_600SemiBold",
-    paddingHorizontal: 20,
-    marginBottom: 12,
-    marginTop: 4,
-  },
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingRight: 20,
-    marginTop: 4,
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 20, marginBottom: 12, marginTop: 8,
   },
-  seeAll: { fontSize: 13, fontFamily: "Poppins_500Medium" },
+  sectionTitle: { fontSize: 16, fontFamily: "Poppins_600SemiBold", letterSpacing: 0.3 },
+  sectionDivider: {
+    flex: 1, height: 1,
+    backgroundColor: "rgba(0,212,255,0.1)", marginLeft: 12,
+  },
+  seeAll: { fontSize: 12, fontFamily: "Poppins_500Medium", letterSpacing: 0.5 },
   actionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 14,
-    gap: 10,
-    marginBottom: 24,
+    flexDirection: "row", flexWrap: "wrap",
+    paddingHorizontal: 14, gap: 10, marginBottom: 24,
   },
   actionItem: {
-    width: "21.5%",
-    aspectRatio: 0.9,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    width: "21.5%", aspectRatio: 0.88,
+    borderRadius: 14, alignItems: "center", justifyContent: "center", gap: 8,
+    borderWidth: 1,
   },
-  actionIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  actionLabel: { fontSize: 11, fontFamily: "Poppins_500Medium", textAlign: "center" },
+  actionIcon: {
+    width: 44, height: 44, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1,
+  },
+  actionLabel: { fontSize: 10, fontFamily: "Poppins_600SemiBold", textAlign: "center", letterSpacing: 0.3 },
   metricsCard: { marginHorizontal: 20, marginBottom: 24 },
   reminderCard: { marginHorizontal: 20, marginBottom: 10 },
   reminderRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  reminderIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  reminderIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   reminderText: { flex: 1, fontSize: 13, fontFamily: "Poppins_400Regular" },
   progressTeaser: { marginHorizontal: 20, marginBottom: 20 },
-  progressTeaserRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 },
+  progressTeaserRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   progressBig: { fontSize: 36, fontFamily: "Poppins_700Bold" },
-  progressTeaserRight: {},
-  progressDesc: { fontSize: 15, fontFamily: "Poppins_600SemiBold" },
-  progressSub: { fontSize: 13, fontFamily: "Poppins_400Regular" },
-  progressCaption: { fontSize: 13, fontFamily: "Poppins_500Medium" },
+  progressTeaserRight: { flex: 1 },
+  progressDesc: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
+  progressSub: { fontSize: 12, fontFamily: "Poppins_400Regular" },
+  trendBadge: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
+  },
+  trendText: { fontFamily: "Poppins_600SemiBold", fontSize: 11 },
 });

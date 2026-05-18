@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/GlassCard";
 import { GlowScoreRing } from "@/components/GlowScoreRing";
+import { MetricBar } from "@/components/MetricBar";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -30,7 +31,7 @@ export default function ScanResultsScreen() {
         <Ionicons name="scan-outline" size={64} color={colors.mutedForeground} />
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No scan results yet</Text>
         <TouchableOpacity onPress={() => router.push("/scan")}>
-          <Text style={[styles.scanLink, { color: colors.primary }]}>Start a scan</Text>
+          <Text style={[styles.scanLink, { color: colors.primary }]}>Run AI Scan</Text>
         </TouchableOpacity>
       </View>
     );
@@ -47,205 +48,157 @@ export default function ScanResultsScreen() {
           <Ionicons name="arrow-back" size={22} color={colors.foreground} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Scan Completed</Text>
+          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Scan Results</Text>
           <View style={styles.checkRow}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-            <Text style={[styles.headerSub, { color: colors.success }]}>Here's your skin overview</Text>
+            <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+            <Text style={[styles.headerSub, { color: colors.success }]}>Analysis Complete</Text>
           </View>
         </View>
         <View style={{ width: 38 }} />
       </View>
 
-      <GlassCard style={styles.scoreCard}>
+      <GlassCard style={styles.scoreCard} glow>
         <View style={styles.scoreRow}>
           <GlowScoreRing score={latestScan.glowScore} size={110} />
           <View style={styles.scoreRight}>
             <Text style={[styles.scoreLabel, { color: colors.mutedForeground }]}>Skin Health Score</Text>
             <Text style={[styles.scoreSub, { color: colors.mutedForeground }]}>{latestScan.date}</Text>
             <View style={styles.detectedRow}>
-              <Text style={[styles.detectedNum, { color: colors.foreground }]}>{latestScan.issues.length}</Text>
-              <Text style={[styles.detectedLabel, { color: colors.mutedForeground }]}>Issues Found</Text>
+              <Text style={[styles.detectedNum, { color: colors.primary }]}>{latestScan.issues.length}</Text>
+              <Text style={[styles.detectedLabel, { color: colors.mutedForeground }]}> Issues Found</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => router.push("/heatmap")}
-              activeOpacity={0.85}
-            >
+            <TouchableOpacity onPress={() => router.push("/heatmap")} activeOpacity={0.85}>
               <LinearGradient
-                colors={["#7B61FF", "#A58BFF"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                colors={["#00D4FF", "#00A8CC"]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={styles.analysisBtn}
               >
-                <Text style={styles.analysisBtnText}>View Full Analysis</Text>
+                <Text style={styles.analysisBtnText}>View Heatmap</Text>
+                <Ionicons name="map-outline" size={13} color="#000" />
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
       </GlassCard>
 
-      <View style={styles.tabRow}>
-        {["Overview", "Heatmap", "Details", "Advice"].map((t, i) => (
-          <TouchableOpacity
-            key={i}
-            onPress={() => t === "Heatmap" && router.push("/heatmap")}
-            style={[styles.tabItem, i === 0 && { borderBottomWidth: 2, borderBottomColor: colors.primary }]}
-          >
-            <Text style={[styles.tabText, { color: i === 0 ? colors.primary : colors.mutedForeground }]}>{t}</Text>
-          </TouchableOpacity>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Issues Detected</Text>
+      <View style={styles.issuesGrid}>
+        {latestScan.issues.map((issue, i) => (
+          <GlassCard key={i} style={styles.issueCard} padding={14}>
+            <View style={[styles.issueDot, { backgroundColor: issue.color }]} />
+            <Text style={[styles.issueType, { color: colors.foreground }]}>{issue.type}</Text>
+            <View style={[styles.severityChip, { backgroundColor: `${issue.color}18`, borderColor: `${issue.color}30` }]}>
+              <Text style={[styles.severityText, { color: issue.color }]}>{issue.severity}</Text>
+            </View>
+            <Text style={[styles.issueCount, { color: colors.primary }]}>{issue.count}</Text>
+          </GlassCard>
         ))}
       </View>
 
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Issues Detected</Text>
-      {latestScan.issues.map((issue, i) => (
-        <GlassCard key={i} style={styles.issueCard} padding={14}>
-          <View style={styles.issueRow}>
-            <View style={[styles.issueDot, { backgroundColor: issue.color }]} />
-            <Text style={[styles.issueType, { color: colors.foreground }]}>{issue.type}</Text>
-            <View style={styles.issueCenter}>
-              <View style={styles.issueBar}>
-                <View style={[
-                  styles.issueFill,
-                  {
-                    backgroundColor: issue.color,
-                    width: issue.severity === "High" ? "75%"
-                      : issue.severity === "Moderate" ? "50%"
-                        : "25%",
-                  },
-                ]} />
-              </View>
-            </View>
-            <View style={[
-              styles.severityChip,
-              {
-                backgroundColor: issue.severity === "High" ? "#FEE2E2"
-                  : issue.severity === "Moderate" ? "#FEF3C7"
-                    : "#F0FDF4",
-              },
-            ]}>
-              <Text style={[
-                styles.severityText,
-                {
-                  color: issue.severity === "High" ? "#EF4444"
-                    : issue.severity === "Moderate" ? "#F59E0B"
-                      : "#22C55E",
-                },
-              ]}>
-                {issue.severity}
-              </Text>
-            </View>
-          </View>
-        </GlassCard>
-      ))}
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Skin Metrics</Text>
+      <GlassCard style={styles.metricsCard}>
+        <MetricBar label="Hydration" value={latestScan.hydration} color="#00D4FF" />
+        <MetricBar label="Clarity" value={latestScan.clarity} color="#7B61FF" />
+        <MetricBar label="Smoothness" value={latestScan.smoothness} color="#00FFA3" />
+        <MetricBar label="Glow Index" value={latestScan.glow} color="#FFB800" />
+      </GlassCard>
 
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recommendations</Text>
-      {[
-        { icon: "water-outline" as const, text: "Increase daily water intake to 8 glasses", color: "#3B82F6" },
-        { icon: "sunny-outline" as const, text: "Apply SPF 50+ every morning without fail", color: "#F59E0B" },
-        { icon: "leaf-outline" as const, text: "Use a Vitamin C serum for dark spot treatment", color: "#22C55E" },
-      ].map((rec, i) => (
-        <GlassCard key={i} style={styles.recCard} padding={14}>
-          <View style={styles.recRow}>
-            <View style={[styles.recIcon, { backgroundColor: `${rec.color}15` }]}>
-              <Ionicons name={rec.icon} size={20} color={rec.color} />
-            </View>
-            <Text style={[styles.recText, { color: colors.foreground }]}>{rec.text}</Text>
-          </View>
-        </GlassCard>
-      ))}
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Skin Profile</Text>
+      <GlassCard style={styles.profileCard}>
+        <View style={styles.profileRow}>
+          <Ionicons name="person-outline" size={18} color={colors.primary} />
+          <Text style={[styles.profileLabel, { color: colors.mutedForeground }]}>Skin Type</Text>
+          <Text style={[styles.profileValue, { color: colors.foreground }]}>{latestScan.skinType}</Text>
+        </View>
+      </GlassCard>
 
-      <TouchableOpacity
-        onPress={() => router.push("/products")}
-        activeOpacity={0.85}
-        style={styles.shopBtnWrap}
-      >
-        <LinearGradient
-          colors={["#7B61FF", "#A58BFF"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.shopBtn}
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          onPress={() => router.push("/routine")}
+          style={[styles.actionBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
         >
-          <Ionicons name="bag-outline" size={18} color="white" />
-          <Text style={styles.shopBtnText}>View Recommended Products</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+          <Text style={[styles.actionBtnText, { color: colors.foreground }]}>View Routine</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push("/scan")} style={styles.rescanBtn}>
+          <LinearGradient colors={["#00D4FF", "#00A8CC"]} style={styles.rescanBtnInner}>
+            <Ionicons name="scan-outline" size={18} color="#000" />
+            <Text style={styles.rescanBtnText}>Re-Scan</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  emptyText: { fontSize: 16, fontFamily: "Poppins_500Medium" },
-  scanLink: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14 },
+  emptyText: { fontFamily: "Poppins_500Medium", fontSize: 16 },
+  scanLink: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, marginBottom: 20,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(0,0,0,0.06)",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: "rgba(0,212,255,0.08)",
+    borderWidth: 1, borderColor: "rgba(0,212,255,0.15)",
+    alignItems: "center", justifyContent: "center",
   },
-  headerCenter: { flex: 1, alignItems: "center" },
-  headerTitle: { fontSize: 18, fontFamily: "Poppins_700Bold" },
+  headerCenter: { alignItems: "center" },
+  headerTitle: { fontFamily: "Poppins_700Bold", fontSize: 18 },
   checkRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  headerSub: { fontSize: 12, fontFamily: "Poppins_400Regular" },
-  scoreCard: { marginHorizontal: 20, marginBottom: 20 },
-  scoreRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  scoreRight: { flex: 1 },
-  scoreLabel: { fontSize: 13, fontFamily: "Poppins_400Regular", marginBottom: 2 },
-  scoreSub: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 8 },
-  detectedRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 12 },
-  detectedNum: { fontSize: 28, fontFamily: "Poppins_700Bold" },
-  detectedLabel: { fontSize: 12, fontFamily: "Poppins_400Regular" },
+  headerSub: { fontFamily: "Poppins_500Medium", fontSize: 11, letterSpacing: 0.5 },
+  scoreCard: { marginHorizontal: 20, marginBottom: 24 },
+  scoreRow: { flexDirection: "row", alignItems: "center", gap: 18 },
+  scoreRight: { flex: 1, gap: 6 },
+  scoreLabel: { fontSize: 12, fontFamily: "Poppins_400Regular" },
+  scoreSub: { fontSize: 11, fontFamily: "Poppins_400Regular" },
+  detectedRow: { flexDirection: "row", alignItems: "baseline" },
+  detectedNum: { fontFamily: "Poppins_700Bold", fontSize: 22 },
+  detectedLabel: { fontFamily: "Poppins_400Regular", fontSize: 12 },
   analysisBtn: {
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, marginTop: 4,
   },
-  analysisBtnText: { fontSize: 12, fontFamily: "Poppins_600SemiBold", color: "white" },
-  tabRow: { flexDirection: "row", paddingHorizontal: 20, marginBottom: 16, borderBottomWidth: 1, borderBottomColor: "#E9E9EF" },
-  tabItem: { flex: 1, paddingVertical: 10, alignItems: "center" },
-  tabText: { fontSize: 12, fontFamily: "Poppins_500Medium" },
+  analysisBtnText: { fontFamily: "Poppins_700Bold", fontSize: 12, color: "#000" },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: "Poppins_600SemiBold",
-    paddingHorizontal: 20,
-    marginBottom: 10,
-    marginTop: 4,
+    fontSize: 15, fontFamily: "Poppins_600SemiBold",
+    paddingHorizontal: 20, marginBottom: 12, marginTop: 4, letterSpacing: 0.3,
   },
-  issueCard: { marginHorizontal: 20, marginBottom: 8 },
-  issueRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  issueDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
-  issueType: { fontSize: 14, fontFamily: "Poppins_500Medium", width: 90 },
-  issueCenter: { flex: 1 },
-  issueBar: { height: 4, backgroundColor: "#E9E9EF", borderRadius: 2, overflow: "hidden" },
-  issueFill: { height: 4, borderRadius: 2 },
-  severityChip: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
-  severityText: { fontSize: 11, fontFamily: "Poppins_600SemiBold" },
-  recCard: { marginHorizontal: 20, marginBottom: 8 },
-  recRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  recIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  recText: { flex: 1, fontSize: 13, fontFamily: "Poppins_400Regular", lineHeight: 18 },
-  shopBtnWrap: { marginHorizontal: 20, marginTop: 12 },
-  shopBtn: {
-    height: 52,
-    borderRadius: 26,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#7B61FF",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
+  issuesGrid: {
+    flexDirection: "row", flexWrap: "wrap",
+    paddingHorizontal: 14, gap: 10, marginBottom: 24,
   },
-  shopBtnText: { fontSize: 15, fontFamily: "Poppins_600SemiBold", color: "white" },
+  issueCard: {
+    width: "44%", marginHorizontal: "1%",
+    borderRadius: 14, gap: 6, alignItems: "flex-start",
+    borderLeftWidth: 3,
+  },
+  issueDot: { width: 8, height: 8, borderRadius: 4 },
+  issueType: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  severityChip: {
+    borderWidth: 1, borderRadius: 6,
+    paddingHorizontal: 7, paddingVertical: 2,
+  },
+  severityText: { fontFamily: "Poppins_700Bold", fontSize: 10, letterSpacing: 0.5 },
+  issueCount: { fontFamily: "Poppins_700Bold", fontSize: 18 },
+  metricsCard: { marginHorizontal: 20, marginBottom: 24 },
+  profileCard: { marginHorizontal: 20, marginBottom: 20 },
+  profileRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  profileLabel: { fontFamily: "Poppins_400Regular", fontSize: 13, flex: 1 },
+  profileValue: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
+  actionRow: { flexDirection: "row", gap: 12, marginHorizontal: 20, marginBottom: 16 },
+  actionBtn: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1,
+  },
+  actionBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
+  rescanBtn: { flex: 1, borderRadius: 14, overflow: "hidden" },
+  rescanBtnInner: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, paddingVertical: 14,
+  },
+  rescanBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: "#000" },
 });

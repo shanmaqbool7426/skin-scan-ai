@@ -50,7 +50,7 @@ export default function ProfileScreen() {
     >
       <GlassCard style={styles.profileCard}>
         <View style={styles.profileRow}>
-          <LinearGradient colors={["#7B61FF", "#A58BFF"]} style={styles.avatar}>
+          <LinearGradient colors={["#00D4FF", "#00A8CC"]} style={styles.avatar}>
             <Text style={styles.avatarInitial}>
               {user.name.charAt(0).toUpperCase()}
             </Text>
@@ -63,7 +63,7 @@ export default function ProfileScreen() {
                 <Text style={[styles.premiumText, { color: colors.primary }]}>Premium Member</Text>
               </View>
             ) : (
-              <TouchableOpacity onPress={() => router.push("/premium")} style={[styles.upgradeBadge, { backgroundColor: "#EEE9FF" }]}>
+              <TouchableOpacity onPress={() => router.push("/premium")} style={[styles.upgradeBadge, { backgroundColor: "rgba(0,212,255,0.1)", borderWidth: 1, borderColor: "rgba(0,212,255,0.2)" }]}>
                 <Ionicons name="crown-outline" size={12} color={colors.primary} />
                 <Text style={[styles.premiumText, { color: colors.primary }]}>Upgrade to Premium</Text>
               </TouchableOpacity>
@@ -92,7 +92,7 @@ export default function ProfileScreen() {
 
       <TouchableOpacity onPress={() => router.push("/premium")} activeOpacity={0.9}>
         <LinearGradient
-          colors={["#7B61FF", "#A58BFF"]}
+          colors={["#00274D", "#001830"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.premiumBanner}
@@ -194,12 +194,12 @@ const styles = StyleSheet.create({
   bannerTitle: { fontSize: 16, fontFamily: "Poppins_700Bold", color: "white", marginBottom: 2 },
   bannerSub: { fontSize: 12, fontFamily: "Poppins_400Regular", color: "rgba(255,255,255,0.8)" },
   bannerBtn: {
-    backgroundColor: "white",
+    backgroundColor: "#00D4FF",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  bannerBtnText: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#7B61FF" },
+  bannerBtnText: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#000" },
   settingsSection: {
     marginHorizontal: 20,
     shadowColor: "#000",

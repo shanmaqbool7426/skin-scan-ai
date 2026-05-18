@@ -61,8 +61,8 @@ export default function PremiumScreen() {
         <Svg width={400} height={400}>
           <Defs>
             <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
-              <Stop offset="0%" stopColor="#7B61FF" stopOpacity="0.25" />
-              <Stop offset="100%" stopColor="#7B61FF" stopOpacity="0" />
+              <Stop offset="0%" stopColor="#00D4FF" stopOpacity="0.18" />
+              <Stop offset="100%" stopColor="#00D4FF" stopOpacity="0" />
             </RadialGradient>
           </Defs>
           <Circle cx={200} cy={200} r={200} fill="url(#glow)" />
@@ -76,8 +76,8 @@ export default function PremiumScreen() {
       </View>
 
       <View style={styles.heroArea}>
-        <LinearGradient colors={["#7B61FF", "#A58BFF"]} style={styles.crownCircle}>
-          <Ionicons name="crown-outline" size={32} color="white" />
+        <LinearGradient colors={["#00D4FF", "#00A8CC"]} style={styles.crownCircle}>
+          <Ionicons name="crown-outline" size={32} color="#000" />
         </LinearGradient>
         <Text style={styles.heroTitle}>GlowAI Premium</Text>
         <Text style={styles.heroSub}>Unlock your best skin</Text>
@@ -87,7 +87,7 @@ export default function PremiumScreen() {
         {FEATURES.map((f, i) => (
           <View key={i} style={styles.featureItem}>
             <View style={styles.featureCheck}>
-              <Ionicons name="checkmark" size={12} color="#7B61FF" />
+              <Ionicons name="checkmark" size={12} color="#00D4FF" />
             </View>
             <Ionicons name={f.icon} size={16} color="rgba(255,255,255,0.7)" />
             <Text style={styles.featureText}>{f.text}</Text>
@@ -114,9 +114,9 @@ export default function PremiumScreen() {
                 <Text style={styles.saveBadgeText}>{p.save}</Text>
               </View>
             )}
-            <Text style={[styles.planLabel, plan === p.key && { color: "#7B61FF" }]}>{p.label}</Text>
-            <Text style={[styles.planPrice, plan === p.key && { color: "#111" }]}>{p.price}</Text>
-            <Text style={[styles.planPeriod, plan === p.key && { color: "#7B61FF" }]}>{p.period}</Text>
+            <Text style={[styles.planLabel, plan === p.key && { color: "#00D4FF" }]}>{p.label}</Text>
+            <Text style={[styles.planPrice, plan === p.key && { color: "#E2EEFF" }]}>{p.price}</Text>
+            <Text style={[styles.planPeriod, plan === p.key && { color: "#00D4FF" }]}>{p.period}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -128,7 +128,7 @@ export default function PremiumScreen() {
         style={styles.ctaWrap}
       >
         <LinearGradient
-          colors={["#7B61FF", "#A58BFF"]}
+          colors={["#00D4FF", "#00A8CC"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[styles.ctaBtn, (loading || user.isPremium) && { opacity: 0.7 }]}

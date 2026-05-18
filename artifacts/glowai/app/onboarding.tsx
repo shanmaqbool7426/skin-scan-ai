@@ -16,7 +16,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Path, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, Ellipse, Line, LinearGradient as SvgLG, Path, Rect, Stop } from "react-native-svg";
 
 import { useApp } from "@/context/AppContext";
 
@@ -26,128 +26,181 @@ const slides = [
   {
     id: "1",
     icon: "scan-outline" as const,
+    tag: "SCAN ENGINE v2.0",
     title: "AI Skin Scanner",
-    subtitle:
-      "Advanced AI analyzes your skin in seconds — detecting acne, dark spots, pores, and more.",
-    color: "#7B61FF",
-    bg: "#EEE9FF",
+    subtitle: "Advanced neural imaging analyzes your skin in seconds — detecting acne, pores, pigmentation, and UV damage with 98.4% accuracy.",
+    primary: "#00D4FF",
+    secondary: "#00FFA3",
   },
   {
     id: "2",
     icon: "analytics-outline" as const,
-    title: "Face Heatmap",
-    subtitle:
-      "See exactly where skin concerns are mapped on your face with detailed heat analysis.",
-    color: "#A58BFF",
-    bg: "#F0EBFF",
+    tag: "HEATMAP ANALYSIS",
+    title: "Face Diagnostics",
+    subtitle: "Visualize exactly where issues are distributed across your face with a real-time thermal heatmap and tissue-layer breakdown.",
+    primary: "#7B61FF",
+    secondary: "#00D4FF",
   },
   {
     id: "3",
-    icon: "sparkles-outline" as const,
-    title: "Personalized Routine",
-    subtitle:
-      "Get a custom skincare routine and AI-recommended products tailored to your skin type.",
-    color: "#7B61FF",
-    bg: "#EEE9FF",
+    icon: "flask-outline" as const,
+    tag: "INGREDIENT AI",
+    title: "Ingredient Scanner",
+    subtitle: "Point your camera at any product label. AI identifies every ingredient, flags harmful compounds, and scores formula safety in seconds.",
+    primary: "#00FFA3",
+    secondary: "#7B61FF",
   },
 ];
 
-function SlideItem({ item }: { item: (typeof slides)[0] }) {
+function SlideIllustration({ slide }: { slide: (typeof slides)[0] }) {
+  const sz = width * 0.58;
   return (
-    <View style={[styles.slide, { width }]}>
-      <View style={[styles.iconWrap, { backgroundColor: item.bg }]}>
-        <Svg width={120} height={120} viewBox="0 0 120 120">
-          <Defs>
-            <SvgLinearGradient id="ig" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="#7B61FF" />
-              <Stop offset="100%" stopColor="#A58BFF" />
-            </SvgLinearGradient>
-          </Defs>
-          <Circle cx={60} cy={60} r={60} fill={item.bg} />
-          <Circle cx={60} cy={60} r={40} fill="none" stroke={item.color} strokeWidth={1} strokeDasharray="4 4" />
-          <Circle cx={60} cy={60} r={25} fill="none" stroke={item.color} strokeWidth={2} opacity={0.4} />
-        </Svg>
-        <View style={[styles.iconCenter, { backgroundColor: item.color }]}>
-          <Ionicons name={item.icon} size={36} color="white" />
-        </View>
+    <View style={[styles.illustrationWrap, { width: sz, height: sz }]}>
+      <Svg width={sz} height={sz} viewBox="0 0 200 200">
+        <Defs>
+          <SvgLG id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={slide.primary} stopOpacity="0.9" />
+            <Stop offset="100%" stopColor={slide.secondary} stopOpacity="0.7" />
+          </SvgLG>
+          <SvgLG id="inner" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={slide.primary} stopOpacity="0.15" />
+            <Stop offset="100%" stopColor={slide.secondary} stopOpacity="0.05" />
+          </SvgLG>
+        </Defs>
+        {/* Grid */}
+        {[40, 80, 120, 160].map((v, i) => (
+          <React.Fragment key={i}>
+            <Line x1={v} y1={20} x2={v} y2={180} stroke="rgba(0,212,255,0.06)" strokeWidth={1} />
+            <Line x1={20} y1={v} x2={180} y2={v} stroke="rgba(0,212,255,0.06)" strokeWidth={1} />
+          </React.Fragment>
+        ))}
+        {/* Outer ring */}
+        <Circle cx={100} cy={100} r={88} fill="url(#inner)" stroke="url(#ring)" strokeWidth={1.5} strokeDasharray="10 6" />
+        {/* Middle ring */}
+        <Circle cx={100} cy={100} r={62} fill="none" stroke={slide.primary} strokeWidth={0.8} strokeOpacity={0.3} />
+        {/* Inner hex-like pattern */}
+        <Circle cx={100} cy={100} r={38} fill={`${slide.primary}18`} />
+        {/* Center icon bg */}
+        <Circle cx={100} cy={100} r={26} fill={`${slide.primary}22`} stroke={slide.primary} strokeWidth={1.5} />
+        {/* Measurement lines */}
+        <Line x1={12} y1={100} x2={38} y2={100} stroke={slide.primary} strokeWidth={1} strokeOpacity={0.5} />
+        <Line x1={162} y1={100} x2={188} y2={100} stroke={slide.primary} strokeWidth={1} strokeOpacity={0.5} />
+        <Line x1={100} y1={12} x2={100} y2={38} stroke={slide.primary} strokeWidth={1} strokeOpacity={0.5} />
+        <Line x1={100} y1={162} x2={100} y2={188} stroke={slide.primary} strokeWidth={1} strokeOpacity={0.5} />
+        {/* Corner markers */}
+        {[[22,22],[178,22],[22,178],[178,178]].map(([cx,cy],i)=>(
+          <React.Fragment key={i}>
+            <Rect x={cx - (i%2===0?0:6)} y={cy - 1} width={8} height={2} fill={slide.primary} opacity={0.7} rx={1} />
+            <Rect x={cx - 1} y={cy - (i<2?0:6)} width={2} height={8} fill={slide.primary} opacity={0.7} rx={1} />
+          </React.Fragment>
+        ))}
+      </Svg>
+      <View style={[styles.illustrationIcon, { backgroundColor: `${slide.primary}18`, borderColor: `${slide.primary}40` }]}>
+        <Ionicons name={slide.icon} size={34} color={slide.primary} />
       </View>
-      <Text style={styles.slideTitle}>{item.title}</Text>
-      <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
     </View>
   );
 }
 
 export default function OnboardingScreen() {
   const { setHasOnboarded } = useApp();
+  const listRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
-  const topPad = Platform.OS === "web" ? 67 : 0;
+  const barWidth = useSharedValue(1 / slides.length);
 
-  const handleNext = async () => {
+  const barStyle = useAnimatedStyle(() => ({
+    width: `${barWidth.value * 100}%` as any,
+  }));
+
+  const goNext = () => {
     if (currentIndex < slides.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
-      setCurrentIndex(currentIndex + 1);
+      const next = currentIndex + 1;
+      listRef.current?.scrollToIndex({ index: next, animated: true });
+      setCurrentIndex(next);
+      barWidth.value = withTiming((next + 1) / slides.length, { duration: 350 });
     } else {
-      await setHasOnboarded(true);
-      router.replace("/auth");
+      handleDone();
     }
   };
 
-  const handleSkip = async () => {
+  const handleDone = async () => {
     await setHasOnboarded(true);
     router.replace("/auth");
   };
 
-  const isLast = currentIndex === slides.length - 1;
+  const topPad = Platform.OS === "web" ? 67 : 56;
+  const slide = slides[currentIndex];
 
   return (
-    <View style={[styles.container, { paddingTop: topPad }]}>
-      <View style={styles.skipRow}>
-        <TouchableOpacity onPress={handleSkip}>
+    <View style={styles.root}>
+      {/* Skip */}
+      <View style={[styles.topBar, { paddingTop: topPad }]}>
+        <View style={styles.topTag}>
+          <Text style={styles.topTagText}>GLOWAI</Text>
+        </View>
+        <TouchableOpacity onPress={handleDone} style={styles.skipBtn}>
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        ref={flatListRef}
-        data={slides}
-        renderItem={({ item }) => <SlideItem item={item} />}
-        keyExtractor={(item) => item.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        scrollEnabled={false}
-        style={styles.list}
-      />
-
-      <View style={styles.dotsRow}>
-        {slides.map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.dot,
-              currentIndex === i && styles.dotActive,
-            ]}
-          />
-        ))}
+      {/* Progress bar */}
+      <View style={styles.progressOuter}>
+        <View style={styles.progressTrack}>
+          <Animated.View style={[styles.progressFill, { backgroundColor: slide.primary }, barStyle]} />
+        </View>
+        <Text style={styles.progressCount}>{currentIndex + 1} / {slides.length}</Text>
       </View>
 
-      <View style={styles.btnArea}>
-        <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
-          <LinearGradient
-            colors={["#7B61FF", "#A58BFF"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.btn}
-          >
-            <Text style={styles.btnText}>
-              {isLast ? "Get Started" : "Next"}
-            </Text>
-            <Ionicons
-              name={isLast ? "arrow-forward" : "arrow-forward"}
-              size={18}
-              color="white"
+      {/* Slides */}
+      <FlatList
+        ref={listRef}
+        data={slides}
+        keyExtractor={(i) => i.id}
+        horizontal
+        pagingEnabled
+        scrollEnabled={false}
+        showsHorizontalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <View style={[styles.slide, { width }]}>
+            <SlideIllustration slide={item} />
+            <View style={styles.textArea}>
+              <View style={[styles.tagChip, { backgroundColor: `${item.primary}15`, borderColor: `${item.primary}35` }]}>
+                <Text style={[styles.tagChipText, { color: item.primary }]}>{item.tag}</Text>
+              </View>
+              <Text style={styles.slideTitle}>{item.title}</Text>
+              <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
+            </View>
+          </View>
+        )}
+      />
+
+      {/* Bottom */}
+      <View style={[styles.bottom, { paddingBottom: (Platform.OS === "web" ? 40 : 48) }]}>
+        {/* Dots */}
+        <View style={styles.dotsRow}>
+          {slides.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                i === currentIndex
+                  ? [styles.dotActive, { backgroundColor: slide.primary }]
+                  : styles.dotInactive,
+              ]}
             />
+          ))}
+        </View>
+
+        <TouchableOpacity onPress={goNext} activeOpacity={0.85} style={styles.nextBtnWrap}>
+          <LinearGradient
+            colors={[slide.primary, slide.secondary]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={styles.nextBtn}
+          >
+            <Text style={styles.nextBtnText}>
+              {currentIndex < slides.length - 1 ? "Next" : "Get Started"}
+            </Text>
+            <Ionicons name={currentIndex < slides.length - 1 ? "arrow-forward" : "checkmark"} size={18} color="#000" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -156,98 +209,69 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F8FC" },
-  skipRow: {
-    alignItems: "flex-end",
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
+  root: { flex: 1, backgroundColor: "#06090F" },
+  topBar: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 20, paddingBottom: 8,
   },
-  skipText: {
-    fontSize: 14,
-    fontFamily: "Poppins_500Medium",
-    color: "#6B6B6B",
+  topTag: {
+    backgroundColor: "rgba(0,212,255,0.1)",
+    borderWidth: 1, borderColor: "rgba(0,212,255,0.25)",
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8,
   },
-  list: { flex: 1 },
+  topTagText: {
+    fontFamily: "Poppins_700Bold", fontSize: 11, color: "#00D4FF", letterSpacing: 3,
+  },
+  skipBtn: { paddingHorizontal: 14, paddingVertical: 8 },
+  skipText: { fontFamily: "Poppins_500Medium", fontSize: 14, color: "#5A7A9F" },
+  progressOuter: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 20, marginBottom: 8,
+  },
+  progressTrack: {
+    flex: 1, height: 2, backgroundColor: "rgba(0,212,255,0.12)", borderRadius: 1, overflow: "hidden",
+  },
+  progressFill: { height: 2, borderRadius: 1 },
+  progressCount: {
+    fontFamily: "Poppins_700Bold", fontSize: 11, color: "#3A506B", letterSpacing: 1,
+  },
   slide: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingHorizontal: 24,
   },
-  iconWrap: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 40,
-    position: "relative",
-  },
-  iconCenter: {
+  illustrationWrap: { alignItems: "center", justifyContent: "center", marginBottom: 32 },
+  illustrationIcon: {
     position: "absolute",
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#7B61FF",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    width: 68, height: 68, borderRadius: 34,
+    borderWidth: 1.5,
+    alignItems: "center", justifyContent: "center",
   },
+  textArea: { alignItems: "center", gap: 12, paddingHorizontal: 8 },
+  tagChip: {
+    borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 4,
+  },
+  tagChipText: { fontFamily: "Poppins_700Bold", fontSize: 10, letterSpacing: 2 },
   slideTitle: {
-    fontSize: 28,
-    fontFamily: "Poppins_700Bold",
-    color: "#111111",
-    textAlign: "center",
-    marginBottom: 12,
+    fontFamily: "Poppins_700Bold", fontSize: 26, color: "#E2EEFF",
+    textAlign: "center", lineHeight: 32,
   },
   slideSubtitle: {
-    fontSize: 16,
-    fontFamily: "Poppins_400Regular",
-    color: "#6B6B6B",
-    textAlign: "center",
-    lineHeight: 24,
+    fontFamily: "Poppins_400Regular", fontSize: 14, color: "#5A7A9F",
+    textAlign: "center", lineHeight: 22,
   },
-  dotsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 32,
-    gap: 6,
+  bottom: {
+    paddingHorizontal: 24, gap: 20, alignItems: "center",
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#E9E9EF",
+  dotsRow: { flexDirection: "row", gap: 7 },
+  dot: { height: 4, borderRadius: 2 },
+  dotActive: { width: 24 },
+  dotInactive: { width: 8, backgroundColor: "#1E2D47" },
+  nextBtnWrap: { width: "100%", borderRadius: 14, overflow: "hidden" },
+  nextBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, paddingVertical: 16,
   },
-  dotActive: {
-    width: 20,
-    backgroundColor: "#7B61FF",
-  },
-  btnArea: {
-    paddingHorizontal: 32,
-    paddingBottom: Platform.OS === "web" ? 50 : 40,
-  },
-  btn: {
-    height: 56,
-    borderRadius: 28,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#7B61FF",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  btnText: {
-    fontSize: 16,
-    fontFamily: "Poppins_600SemiBold",
-    color: "white",
-  },
+  nextBtnText: { fontFamily: "Poppins_700Bold", fontSize: 15, color: "#000" },
 });
