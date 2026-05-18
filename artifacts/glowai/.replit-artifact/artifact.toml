@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "GlowAI"
+version = "1.0.0"
+id = "artifacts/glowai"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 22552
+
+[services.development]
+run = "pnpm --filter @workspace/glowai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/glowai", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/glowai", "run", "serve" ]
+
+[services.env]
+PORT = "22552"
+BASE_PATH = "/"

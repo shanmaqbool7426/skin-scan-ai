@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "iSYFoZigLhRTkMNzoRDR1"
+uri = "file://artifacts/glowai/assets/images/icon.png"
+type = "image"
+title = "glowai app icon"
+
+[[generated]]
+id = "MZ9UuseyCkXOgmjuXQwlN"
+uri = "file://artifacts/glowai/assets/images/model_hero.png"
+type = "image"
+title = "glowai hero model"
+
+[[generated]]
+id = "08kR5vWe90F61HDr4dsBB"
+uri = "file://artifacts/glowai/assets/images/face_scan.png"
+type = "image"
+title = "glowai face scan overlay"
