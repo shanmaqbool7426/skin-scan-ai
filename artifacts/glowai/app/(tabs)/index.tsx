@@ -21,7 +21,7 @@ import { useColors } from "@/hooks/useColors";
 
 const quickActions = [
   { icon: "scan-outline" as const, label: "Scan Skin", route: "/scan" as const },
-  { icon: "chatbubble-ellipses-outline" as const, label: "AI Doctor", route: "/(tabs)/chat" as const },
+  { icon: "flask-outline" as const, label: "Ingredients", route: "/ingredient-scanner" as const },
   { icon: "calendar-outline" as const, label: "Routine", route: "/routine" as const },
   { icon: "bag-outline" as const, label: "Products", route: "/products" as const },
 ];
