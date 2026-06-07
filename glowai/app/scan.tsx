@@ -1,11 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import type { CameraView as CameraViewType } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Dimensions,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -17,13 +20,11 @@ import Animated, {
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withRepeat,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
 import Svg, {
-  Circle,
   Defs,
   Ellipse,
   Line,
@@ -33,7 +34,10 @@ import Svg, {
 } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useApp, type ScanResult } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
+
+// ── Config: update this to your computer's local IP ──────────────────────────
+const BACKEND_URL = "http://192.168.1.109:3000/api/scan";
 
 const { width, height } = Dimensions.get("window");
 const OVAL_W = width * 0.56;
@@ -41,75 +45,37 @@ const OVAL_H = OVAL_W * 1.32;
 const OVAL_X = (width - OVAL_W) / 2;
 const OVAL_Y = height * 0.18;
 
-type Stage = "idle" | "detecting" | "scanning" | "analyzing" | "complete";
+type Stage =
+  | "idle"
+  | "detecting"
+  | "aligning"
+  | "scanFront"
+  | "turnLeft"
+  | "scanLeft"
+  | "turnRight"
+  | "scanRight"
+  | "capturing"
+  | "scanning"
+  | "analyzing"
+  | "complete";
 
 const STAGES: { key: Stage; label: string; sub: string; pct: number }[] = [
-  { key: "idle",      label: "READY",            sub: "Position face in frame",          pct: 0 },
-  { key: "detecting", label: "DETECTING",         sub: "Face structure mapping...",       pct: 18 },
-  { key: "scanning",  label: "SURFACE SCAN",      sub: "Epidermal layer analysis...",     pct: 45 },
-  { key: "analyzing", label: "DEEP ANALYSIS",     sub: "Neural pattern recognition...",   pct: 78 },
-  { key: "complete",  label: "COMPLETE",          sub: "Report ready",                    pct: 100 },
+  { key: "idle",       label: "READY",            sub: "Position face in frame",            pct: 0 },
+  { key: "detecting",  label: "DETECTING",         sub: "Locating facial landmarks...",      pct: 5 },
+  { key: "aligning",   label: "ALIGN OVAL",        sub: "Center face in overlay frame...",   pct: 10 },
+  { key: "scanFront",  label: "FRONTAL SCAN",      sub: "Mapping base surface...",           pct: 25 },
+  { key: "turnLeft",   label: "TURN LEFT",         sub: "Slowly turn your head left",        pct: 35 },
+  { key: "scanLeft",   label: "LEFT PROFILE",      sub: "Scanning left side pores...",       pct: 50 },
+  { key: "turnRight",  label: "TURN RIGHT",        sub: "Slowly turn your head right",       pct: 60 },
+  { key: "scanRight",  label: "RIGHT PROFILE",     sub: "Scanning right pigmentation...",    pct: 75 },
+  { key: "capturing",  label: "NEUTRAL FACE",      sub: "Look straight for final capture...",pct: 85 },
+  { key: "scanning",   label: "EPIDERMAL SCAN",    sub: "Finalizing texture mapping...",     pct: 90 },
+  { key: "analyzing",  label: "DEEP DERMA AI",     sub: "Evaluating skin layers (1.5s)...",  pct: 95 },
+  { key: "complete",   label: "COMPLETE",          sub: "Clinical report ready",             pct: 100 },
 ];
 
 function randomVal(min: number, max: number) {
   return (Math.random() * (max - min) + min).toFixed(2);
-}
-
-function generateScanResult(): ScanResult {
-  const score = Math.floor(Math.random() * 20) + 72;
-  return {
-    id: `scan_${Date.now()}`,
-    date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-    glowScore: score,
-    issues: [
-      { type: "Acne", severity: "Mild", count: Math.floor(Math.random() * 5) + 1, color: "#FF3B5C" },
-      { type: "Dark Spots", severity: "Moderate", count: Math.floor(Math.random() * 6) + 2, color: "#FFB800" },
-      { type: "Pores", severity: "High", count: Math.floor(Math.random() * 10) + 5, color: "#5A7A9F" },
-      { type: "Redness", severity: "Mild", count: Math.floor(Math.random() * 3) + 1, color: "#FF3B5C" },
-    ],
-    skinType: "Combination",
-    hydration: Math.floor(Math.random() * 20) + 70,
-    clarity: Math.floor(Math.random() * 20) + 65,
-    smoothness: Math.floor(Math.random() * 20) + 72,
-    glow: score,
-  };
-}
-
-function DataPanel({
-  side,
-  scanning,
-}: {
-  side: "left" | "right";
-  scanning: boolean;
-}) {
-  const [vals, setVals] = useState({ a: "—", b: "—", c: "—" });
-  useEffect(() => {
-    if (!scanning) { setVals({ a: "—", b: "—", c: "—" }); return; }
-    const iv = setInterval(() => {
-      setVals({
-        a: randomVal(60, 98) + "%",
-        b: randomVal(0.1, 0.9),
-        c: randomVal(40, 99) + "%",
-      });
-    }, 280);
-    return () => clearInterval(iv);
-  }, [scanning]);
-
-  const labels =
-    side === "left"
-      ? [["HYD", vals.a], ["CLAR", vals.b], ["TONE", vals.c]]
-      : [["SEBM", vals.a], ["ELST", vals.b], ["COLL", vals.c]];
-
-  return (
-    <View style={[styles.dataPanel, side === "left" ? styles.dataPanelLeft : styles.dataPanelRight]}>
-      {labels.map(([k, v]) => (
-        <View key={k} style={styles.dataRow}>
-          <Text style={styles.dataKey}>{k}</Text>
-          <Text style={[styles.dataVal, { color: scanning ? "#00D4FF" : "#3A506B" }]}>{v}</Text>
-        </View>
-      ))}
-    </View>
-  );
 }
 
 export default function ScanScreen() {
@@ -118,7 +84,15 @@ export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [stage, setStage] = useState<Stage>("idle");
   const [flash, setFlash] = useState(false);
-  const cameraRef = useRef<CameraView>(null);
+  const [showLightWarning, setShowLightWarning] = useState(false);
+  const [scanError, setScanError] = useState<{
+    title: string;
+    message: string;
+    icon: string;
+    tip: string;
+    iconColor: string;
+  } | null>(null);
+  const cameraRef = useRef<CameraViewType>(null);
 
   const sweepY = useSharedValue(-OVAL_H / 2);
   const ring1Rot = useSharedValue(0);
@@ -162,22 +136,173 @@ export default function ScanScreen() {
   const ovalStyle = useAnimatedStyle(() => ({ transform: [{ scale: ovalPulse.value }] }));
   const btnStyle = useAnimatedStyle(() => ({ transform: [{ scale: btnScale.value }] }));
   const progressStyle = useAnimatedStyle(() => ({ width: `${progressWidth.value}%` as any }));
+  const statusDotStyle = useAnimatedStyle(() => ({
+    opacity: stage !== "idle" && stage !== "complete" ? dotOpacity.value : 1,
+  }));
 
   const handleScan = async () => {
     if (stage !== "idle") return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     btnScale.value = withSequence(withTiming(0.88, { duration: 80 }), withTiming(1, { duration: 80 }));
 
-    const steps: Stage[] = ["detecting", "scanning", "analyzing", "complete"];
-    const delays = [0, 800, 1900, 3100];
-    steps.forEach((s, i) => setTimeout(() => setStage(s), delays[i]));
+    try {
+      // ── Stage 1: Detecting ──────────────────────────────────────────────
+      setStage("detecting");
+      await new Promise(r => setTimeout(r, 900));
 
-    setTimeout(async () => {
+      // ── Stage 2: Aligning ───────────────────────────────────────────────
+      setStage("aligning");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await new Promise(r => setTimeout(r, 1400));
+
+      // ── Frontal Scan ────────────────────────────────────────────────────
+      setStage("scanFront");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await new Promise(r => setTimeout(r, 1200));
+
+      // ── Turn Left & Scan ────────────────────────────────────────────────
+      setStage("turnLeft");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await new Promise(r => setTimeout(r, 1500));
+      
+      setStage("scanLeft");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await new Promise(r => setTimeout(r, 1200));
+
+      // ── Turn Right & Scan ───────────────────────────────────────────────
+      setStage("turnRight");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await new Promise(r => setTimeout(r, 1500));
+
+      setStage("scanRight");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await new Promise(r => setTimeout(r, 1200));
+
+      // ── Final Capture Pose ──────────────────────────────────────────────
+      setStage("capturing");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      await new Promise(r => setTimeout(r, 1500));
+
+      // ── Capture photo & Analyze Quality ─────────────────────────────────
+      let base64Image = "";
+      if (Platform.OS !== "web" && cameraRef.current) {
+        const photo = await cameraRef.current.takePictureAsync({
+          base64: true,
+          quality: 0.25,   // lower = smaller payload = fewer tokens = no quota issues
+          exif: false,
+        });
+        base64Image = photo?.base64 ?? "";
+      }
+
+      // Check if image is extremely dark/poorly-lit/covered camera.
+      // A standard 0.25 quality face image has high complexity (size > 22k chars).
+      // A black/flat covered camera or extreme low-light image has extremely low complexity (size < 13k chars).
+      // We set a safe professional boundary at 17,500 chars.
+      if (Platform.OS !== "web" && (!base64Image || base64Image.length < 17500)) {
+        console.log("⚠️ Skin scan warning: Under-illuminated or flat image detected. Length:", base64Image?.length);
+        setStage("idle");
+        setShowLightWarning(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+
+      // ── Stage 6: Surface Scanning ───────────────────────────────────────
+      setStage("scanning");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await new Promise(r => setTimeout(r, 1200));
+
+      // ── Stage 7: Analyzing (send to AI) ────────────────────────────────
+      setStage("analyzing");
+
+      const response = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64Image }),
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+
+      // ── Handle AI validation rejection (422) ────────────────────────────
+      if (response.status === 422 && responseData?.validationFailed) {
+        setStage("idle");
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        const code = responseData.failureCode || "UNKNOWN";
+        const FAILURE_MESSAGES: Record<string, { title: string; message: string; icon: string; tip: string; iconColor: string }> = {
+          NO_FACE: {
+            title: "No Face Detected",
+            message: "The AI could not find a human face in this scan.",
+            icon: "person-outline",
+            tip: "Centre your face inside the oval frame and try again.",
+            iconColor: "#FF3B5C",
+          },
+          TOO_FAR: {
+            title: "Move Closer",
+            message: "Your face is too far from the camera. The AI needs to see your skin pores clearly.",
+            icon: "expand-outline",
+            tip: "Hold the phone ~30cm (12 inches) from your face.",
+            iconColor: "#FFB800",
+          },
+          FACE_CUT_OFF: {
+            title: "Face Not Fully Visible",
+            message: "Part of your face is outside the frame. The AI needs your full face.",
+            icon: "crop-outline",
+            tip: "Move back slightly until your whole face fits in the oval.",
+            iconColor: "#FFB800",
+          },
+          DARK_LIGHTING: {
+            title: "Too Dark",
+            message: "Lighting is too dim for an accurate skin analysis.",
+            icon: "moon-outline",
+            tip: "Move to a brighter area or face a light source, then try again.",
+            iconColor: "#7B61FF",
+          },
+          BRIGHT_OVEREXPOSED: {
+            title: "Overexposed",
+            message: "Too much direct light is washing out your skin details.",
+            icon: "sunny-outline",
+            tip: "Avoid direct sunlight or harsh flashes. Use soft ambient light.",
+            iconColor: "#FFB800",
+          },
+          BLURRY: {
+            title: "Image Blurry",
+            message: "The image is too blurry for accurate pore-level analysis.",
+            icon: "eye-off-outline",
+            tip: "Hold the phone steady and ensure camera lens is clean.",
+            iconColor: "#5A7A9F",
+          },
+        };
+        setScanError(FAILURE_MESSAGES[code] || {
+          title: "Scan Not Accepted",
+          message: responseData.failureReason || "The image was not suitable for skin analysis.",
+          icon: "alert-circle-outline",
+          tip: "Ensure your face is clear, well-lit, and centred in the oval.",
+          iconColor: "#FF3B5C",
+        });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(responseData?.error || `Server error ${response.status}`);
+      }
+
+      // ── Stage 8: Complete ───────────────────────────────────────────────
+      setStage("complete");
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const result = generateScanResult();
-      addScanResult(result);
+
+      addScanResult(responseData);
       setTimeout(() => router.replace("/scan-results"), 700);
-    }, 3200);
+
+    } catch (error: any) {
+      console.error("❌ Scan error:", error?.message || error);
+      setStage("idle");
+      Alert.alert(
+        "Scan Failed",
+        error?.message?.includes("Network") || error?.message?.includes("fetch")
+          ? "Cannot connect to server.\n\nMake sure:\n1. Backend is running (node server.js)\n2. Phone and PC are on same Wi-Fi\n3. IP in BACKEND_URL is correct"
+          : (error?.message || "AI analysis failed. Please try again."),
+        [{ text: "OK" }]
+      );
+    }
   };
 
   const topPad = (Platform.OS === "web" ? 67 : insets.top) + 8;
@@ -240,9 +365,7 @@ export default function ScanScreen() {
           <Ionicons name="close" size={22} color="rgba(255,255,255,0.8)" />
         </TouchableOpacity>
         <View style={styles.topCenter}>
-          <Animated.View style={[styles.statusDot, { backgroundColor: stage === "idle" ? "#3A506B" : "#00D4FF" }, useAnimatedStyle(() => ({
-            opacity: stage !== "idle" && stage !== "complete" ? dotOpacity.value : 1,
-          }))]}>
+          <Animated.View style={[styles.statusDot, { backgroundColor: stage === "idle" ? "#3A506B" : "#00D4FF" }, statusDotStyle]}>
           </Animated.View>
           <Text style={styles.topLabel}>AI DERMA SCAN</Text>
         </View>
@@ -252,7 +375,7 @@ export default function ScanScreen() {
       </View>
 
       {/* Stage indicator strip */}
-      <View style={styles.stageBand}>
+      <View style={[styles.stageBand, { top: topPad + 55 }]}>
         <View style={styles.stageLabelRow}>
           <Text style={[styles.stageKey, { color: stage === "idle" ? "#3A506B" : "#00D4FF" }]}>
             {stageData.label}
@@ -347,9 +470,143 @@ export default function ScanScreen() {
         )}
       </Animated.View>
 
-      {/* Side data panels */}
-      <DataPanel side="left" scanning={stage === "scanning" || stage === "analyzing"} />
-      <DataPanel side="right" scanning={stage === "scanning" || stage === "analyzing"} />
+      {/* Guidance HUD Overlay */}
+      {stage !== "idle" && stage !== "complete" && stage !== "scanning" && stage !== "analyzing" && (
+        <View style={styles.hudOverlay}>
+          <View style={styles.hudCard}>
+            {stage === "detecting" && (
+              <>
+                <Ionicons name="scan-outline" size={32} color="#00D4FF" />
+                <Text style={styles.hudTitle}>DETECTING FACE</Text>
+                <Text style={styles.hudSub}>Position yourself in focus</Text>
+              </>
+            )}
+            {stage === "aligning" && (
+              <>
+                <Ionicons name="expand" size={32} color="#00D4FF" />
+                <Text style={styles.hudTitle}>ALIGN FACE</Text>
+                <Text style={styles.hudSub}>Fit your face completely in oval</Text>
+              </>
+            )}
+            {stage === "scanFront" && (
+              <>
+                <Ionicons name="body-outline" size={32} color="#00FFA3" />
+                <Text style={[styles.hudTitle, { color: "#00FFA3" }]}>HOLD STILL</Text>
+                <Text style={styles.hudSub}>Scanning frontal features...</Text>
+              </>
+            )}
+            {stage === "turnLeft" && (
+              <>
+                <Ionicons name="arrow-undo-outline" size={32} color="#7B61FF" />
+                <Text style={[styles.hudTitle, { color: "#9A8CFF" }]}>TURN HEAD LEFT</Text>
+                <Text style={styles.hudSub}>Slowly expose left cheek</Text>
+              </>
+            )}
+            {stage === "scanLeft" && (
+              <>
+                <Ionicons name="body-outline" size={32} color="#00FFA3" />
+                <Text style={[styles.hudTitle, { color: "#00FFA3" }]}>HOLD STILL</Text>
+                <Text style={styles.hudSub}>Deep scanning left profile...</Text>
+              </>
+            )}
+            {stage === "turnRight" && (
+              <>
+                <Ionicons name="arrow-redo-outline" size={32} color="#7B61FF" />
+                <Text style={[styles.hudTitle, { color: "#9A8CFF" }]}>TURN HEAD RIGHT</Text>
+                <Text style={styles.hudSub}>Slowly expose right cheek</Text>
+              </>
+            )}
+            {stage === "scanRight" && (
+              <>
+                <Ionicons name="body-outline" size={32} color="#00FFA3" />
+                <Text style={[styles.hudTitle, { color: "#00FFA3" }]}>HOLD STILL</Text>
+                <Text style={styles.hudSub}>Deep scanning right profile...</Text>
+              </>
+            )}
+            {stage === "capturing" && (
+              <>
+                <Ionicons name="camera-outline" size={32} color="#00D4FF" />
+                <Text style={styles.hudTitle}>LOOK FORWARD</Text>
+                <Text style={styles.hudSub}>Close mouth & look at camera</Text>
+              </>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Glassmorphic Light Warning Modal */}
+      <Modal
+        visible={showLightWarning}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLightWarning(false)}
+      >
+        <View style={styles.modalBg}>
+          <View style={styles.warningCard}>
+            <View style={styles.warningHeader}>
+              <Ionicons name="warning" size={32} color="#FFB800" style={{ marginRight: 8 }} />
+              <Text style={styles.warningTitle}>POOR LIGHTING DETECTED</Text>
+            </View>
+            <Text style={styles.warningText}>
+              Dermatological AI scan requires strong and even lighting to analyze pores, redness, and wrinkles accurately.{"\n\n"}
+              Your environment appears too dark or the camera is covered.
+            </Text>
+            <View style={styles.warningTips}>
+              <Text style={styles.tipRow}><Text style={styles.tipNum}>1.</Text> Move to a bright, well-lit room.</Text>
+              <Text style={styles.tipRow}><Text style={styles.tipNum}>2.</Text> Face a light source directly.</Text>
+              <Text style={styles.tipRow}><Text style={styles.tipNum}>3.</Text> Ensure camera lens is clean.</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowLightWarning(false)}
+              activeOpacity={0.8}
+              style={styles.dismissBtn}
+            >
+              <LinearGradient colors={["#00D4FF", "#0088AA"]} style={styles.dismissBtnInner}>
+                <Text style={styles.dismissBtnText}>TRY AGAIN</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* AI Scan Validation Error Modal */}
+      <Modal
+        visible={scanError !== null}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setScanError(null)}
+      >
+        <View style={styles.modalBg}>
+          {scanError && (
+            <View style={[styles.warningCard, { borderColor: scanError.iconColor + "40" }]}>
+              <View style={styles.warningHeader}>
+                <View style={[styles.errorIconCircle, { backgroundColor: scanError.iconColor + "18", borderColor: scanError.iconColor + "35" }]}>
+                  <Ionicons name={scanError.icon as any} size={30} color={scanError.iconColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.warningTitle, { color: scanError.iconColor }]}>{scanError.title.toUpperCase()}</Text>
+                  <Text style={styles.errorSubLabel}>AI Scan Rejected</Text>
+                </View>
+              </View>
+              <Text style={styles.warningText}>{scanError.message}</Text>
+              <View style={[styles.warningTips, { borderColor: scanError.iconColor + "20", backgroundColor: scanError.iconColor + "08" }]}>
+                <Ionicons name="bulb-outline" size={16} color={scanError.iconColor} />
+                <Text style={[styles.tipRow, { color: "#E2EEFF", marginTop: 0 }]}>{scanError.tip}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setScanError(null)}
+                activeOpacity={0.8}
+                style={styles.dismissBtn}
+              >
+                <LinearGradient colors={["#00D4FF", "#0088AA"]} style={styles.dismissBtnInner}>
+                  <Ionicons name="camera-outline" size={16} color="#000" />
+                  <Text style={styles.dismissBtnText}>TRY AGAIN</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
 
       {/* Bottom area */}
       <View style={[styles.bottomArea, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 28 }]}>
@@ -369,10 +626,10 @@ export default function ScanScreen() {
 
         <Text style={styles.hintText}>
           {stage === "idle" ? "Centre your face — ensure even lighting" :
-           stage === "detecting" ? "Face detected — hold position..." :
-           stage === "scanning" ? "Mapping epidermal layer..." :
-           stage === "analyzing" ? "Neural analysis in progress..." :
-           "Analysis complete"}
+            stage === "detecting" ? "Face detected — hold position..." :
+              stage === "scanning" ? "Mapping epidermal layer..." :
+                stage === "analyzing" ? "Neural analysis in progress..." :
+                  "Analysis complete"}
         </Text>
 
         <Animated.View style={btnStyle}>
@@ -551,5 +808,141 @@ const styles = StyleSheet.create({
   scanBtnLabel: {
     fontFamily: "Poppins_700Bold", fontSize: 10,
     color: "rgba(0,212,255,0.6)", letterSpacing: 2.5,
+  },
+  hudOverlay: {
+    position: "absolute",
+    top: OVAL_Y + OVAL_H + 20,
+    left: 24,
+    right: 24,
+    alignItems: "center",
+  },
+  hudCard: {
+    width: "100%",
+    backgroundColor: "rgba(10,21,37,0.85)",
+    borderWidth: 1.5,
+    borderColor: "rgba(0,212,255,0.25)",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    gap: 6,
+    shadowColor: "#00D4FF",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  hudTitle: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 13,
+    color: "#00D4FF",
+    letterSpacing: 2,
+    marginTop: 4,
+  },
+  hudSub: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: "#A2C3EC",
+    textAlign: "center",
+  },
+  modalBg: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  warningCard: {
+    width: "100%",
+    backgroundColor: "#0A1525",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,184,0,0.35)",
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#FFB800",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  warningHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  warningTitle: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 16,
+    color: "#FFB800",
+    letterSpacing: 1,
+    flex: 1,
+  },
+  warningText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: "#E2EEFF",
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  warningTips: {
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
+    gap: 8,
+  },
+  tipRow: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 13,
+    color: "#A2C3EC",
+  },
+  tipNum: {
+    fontFamily: "Poppins_700Bold",
+    color: "#FFB800",
+  },
+  dismissBtn: {
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  dismissBtnInner: {
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  dismissBtnText: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 14,
+    color: "#000",
+    letterSpacing: 1.5,
+  },
+  errorIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  errorSubLabel: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: "#5A7A9F",
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  warningTipsRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  hudCountdown: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 48,
+    color: "#00D4FF",
+    includeFontPadding: false,
+    lineHeight: 56,
   },
 });

@@ -59,12 +59,12 @@ export default function ProfileScreen() {
             <Text style={[styles.profileName, { color: colors.foreground }]}>{user.name}</Text>
             {user.isPremium ? (
               <View style={[styles.premiumBadge, { backgroundColor: colors.lavender }]}>
-                <Ionicons name="crown-outline" size={12} color={colors.primary} />
+                <Ionicons name="star-outline" size={12} color={colors.primary} />
                 <Text style={[styles.premiumText, { color: colors.primary }]}>Premium Member</Text>
               </View>
             ) : (
               <TouchableOpacity onPress={() => router.push("/premium")} style={[styles.upgradeBadge, { backgroundColor: "rgba(0,212,255,0.1)", borderWidth: 1, borderColor: "rgba(0,212,255,0.2)" }]}>
-                <Ionicons name="crown-outline" size={12} color={colors.primary} />
+                <Ionicons name="star-outline" size={12} color={colors.primary} />
                 <Text style={[styles.premiumText, { color: colors.primary }]}>Upgrade to Premium</Text>
               </TouchableOpacity>
             )}

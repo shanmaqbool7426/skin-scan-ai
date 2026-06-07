@@ -77,7 +77,7 @@ export default function PremiumScreen() {
 
       <View style={styles.heroArea}>
         <LinearGradient colors={["#00D4FF", "#00A8CC"]} style={styles.crownCircle}>
-          <Ionicons name="crown-outline" size={32} color="#000" />
+          <Ionicons name="star-outline" size={32} color="#000" />
         </LinearGradient>
         <Text style={styles.heroTitle}>GlowAI Premium</Text>
         <Text style={styles.heroSub}>Unlock your best skin</Text>

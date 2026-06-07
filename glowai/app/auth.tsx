@@ -14,22 +14,59 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Defs, Line, RadialGradient, Stop } from "react-native-svg";
 
-import { useApp } from "@/context/AppContext";
+import { useApp, BASE_URL } from "@/context/AppContext";
 
 export default function AuthScreen() {
-  const { setIsLoggedIn } = useApp();
+  const { setIsLoggedIn, setToken, updateUser } = useApp();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const handleAuth = async () => {
-    await setIsLoggedIn(true);
-    router.replace("/(tabs)");
+    if (!email || !password) {
+      setErrorMsg("Please fill in all fields.");
+      return;
+    }
+    if (tab === "register" && !name) {
+      setErrorMsg("Please provide your name.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+
+    try {
+      const endpoint = tab === "login" ? "/api/auth/login" : "/api/auth/register";
+      const payload = tab === "login" ? { email, password } : { name, email, password };
+      
+      const res = await fetch(`${BASE_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Authentication failed");
+      }
+
+      await setToken(data.token);
+      await updateUser(data.user);
+      await setIsLoggedIn(true);
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -167,17 +204,21 @@ export default function AuthScreen() {
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity onPress={handleAuth} activeOpacity={0.88} style={styles.mainBtnWrap}>
+      {errorMsg ? (
+        <Text style={styles.errorText}>{errorMsg}</Text>
+      ) : null}
+
+      <TouchableOpacity onPress={handleAuth} activeOpacity={0.88} style={styles.mainBtnWrap} disabled={loading}>
         <LinearGradient
-          colors={["#00D4FF", "#00A8CC"]}
+          colors={loading ? ["#3A506B", "#1C2D41"] : ["#00D4FF", "#00A8CC"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.mainBtn}
         >
-          <Text style={styles.mainBtnText}>
-            {tab === "login" ? "Sign In" : "Create Account"}
+          <Text style={[styles.mainBtnText, loading && { color: "#A0B5D1" }]}>
+            {loading ? "Please wait..." : tab === "login" ? "Sign In" : "Create Account"}
           </Text>
-          <Ionicons name="arrow-forward" size={18} color="#000" />
+          {!loading && <Ionicons name="arrow-forward" size={18} color="#000" />}
         </LinearGradient>
       </TouchableOpacity>
 
@@ -259,6 +300,7 @@ const styles = StyleSheet.create({
   eyeBtn: { padding: 4 },
   forgotRow: { alignSelf: "flex-end", marginBottom: 20 },
   forgotText: { fontFamily: "Poppins_500Medium", fontSize: 13, color: "#00D4FF" },
+  errorText: { color: "#FF6B6B", fontFamily: "Poppins_500Medium", fontSize: 13, marginBottom: 14, textAlign: "center" },
   mainBtnWrap: { borderRadius: 14, overflow: "hidden", marginBottom: 20, marginTop: 4 },
   mainBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",

@@ -9,7 +9,7 @@ import React, {
 
 export interface SkinIssue {
   type: string;
-  severity: "Mild" | "Moderate" | "High";
+  severity: "Low" | "Mild" | "Moderate" | "High" | "Severe";
   count: number;
   color: string;
 }
@@ -24,6 +24,8 @@ export interface ScanResult {
   clarity: number;
   smoothness: number;
   glow: number;
+  clinicalSummary?: string;
+  recommendations?: string[];
 }
 
 export interface UserProfile {
@@ -46,6 +48,8 @@ export interface WeeklyScore {
   score: number;
 }
 
+export const BASE_URL = "http://192.168.1.109:3000";
+
 interface AppContextType {
   user: UserProfile;
   scanHistory: ScanResult[];
@@ -54,8 +58,10 @@ interface AppContextType {
   weeklyScores: WeeklyScore[];
   hasOnboarded: boolean;
   isLoggedIn: boolean;
+  token: string | null;
   setHasOnboarded: (v: boolean) => void;
   setIsLoggedIn: (v: boolean) => void;
+  setToken: (v: string | null) => void;
   addScanResult: (result: ScanResult) => void;
   addChatMessage: (msg: ChatMessage) => void;
   updateUser: (updates: Partial<UserProfile>) => void;
@@ -112,18 +118,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [weeklyScores] = useState<WeeklyScore[]>(defaultScores);
   const [hasOnboarded, setHasOnboardedState] = useState(false);
   const [isLoggedIn, setIsLoggedInState] = useState(false);
+  const [token, setTokenState] = useState<string | null>(null);
 
   useEffect(() => {
     const loadStorage = async () => {
       try {
-        const [onboarded, loggedIn, userData] = await Promise.all([
+        const [onboarded, loggedIn, userData, savedToken] = await Promise.all([
           AsyncStorage.getItem("hasOnboarded"),
           AsyncStorage.getItem("isLoggedIn"),
           AsyncStorage.getItem("userData"),
+          AsyncStorage.getItem("jwtToken"),
         ]);
         if (onboarded === "true") setHasOnboardedState(true);
         if (loggedIn === "true") setIsLoggedInState(true);
         if (userData) setUser(JSON.parse(userData));
+        if (savedToken) setTokenState(savedToken);
       } catch (_) {}
     };
     loadStorage();
@@ -137,6 +146,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setIsLoggedIn = useCallback(async (v: boolean) => {
     setIsLoggedInState(v);
     await AsyncStorage.setItem("isLoggedIn", v ? "true" : "false");
+  }, []);
+
+  const setToken = useCallback(async (v: string | null) => {
+    setTokenState(v);
+    if (v) await AsyncStorage.setItem("jwtToken", v);
+    else await AsyncStorage.removeItem("jwtToken");
   }, []);
 
   const addScanResult = useCallback((result: ScanResult) => {
@@ -167,8 +182,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         weeklyScores,
         hasOnboarded,
         isLoggedIn,
+        token,
         setHasOnboarded,
         setIsLoggedIn,
+        setToken,
         addScanResult,
         addChatMessage,
         updateUser,
