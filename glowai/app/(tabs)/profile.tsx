@@ -29,7 +29,7 @@ const settingsItems = [
 ];
 
 export default function ProfileScreen() {
-  const { user, setIsLoggedIn, setHasOnboarded } = useApp();
+  const { user, logout, scanHistory, latestScan } = useApp();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -37,7 +37,7 @@ export default function ProfileScreen() {
 
   const handleItemPress = async (label: string) => {
     if (label === "Logout") {
-      await setIsLoggedIn(false);
+      await logout();
       router.replace("/auth");
     }
   };
@@ -78,8 +78,8 @@ export default function ProfileScreen() {
 
         <View style={styles.statsRow}>
           {[
-            { label: "Scans", value: "12" },
-            { label: "Glow Score", value: "82" },
+            { label: "Scans", value: String(scanHistory.length) },
+            { label: "Glow Score", value: latestScan ? String(latestScan.glowScore) : "—" },
             { label: "Skin Type", value: user.skinType },
           ].map((s, i) => (
             <View key={i} style={[styles.statItem, i < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>

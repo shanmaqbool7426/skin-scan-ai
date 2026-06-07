@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,7 +27,23 @@ const quickActions = [
 ];
 
 export default function HomeScreen() {
-  const { user, latestScan, scanHistory } = useApp();
+  const { user, latestScan, scanHistory, fetchUserProfile, fetchScanHistory } = useApp();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchUserProfile().catch(() => {}),
+        fetchScanHistory().catch(() => {}),
+      ]);
+    } catch (err) {
+      console.error("Refresh error:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchUserProfile, fetchScanHistory]);
+
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -91,6 +108,9 @@ export default function HomeScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ paddingTop: topPad + 16, paddingBottom: bottomPad }}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00D4FF" />
+      }
     >
       {/* Header */}
       <View style={styles.header}>

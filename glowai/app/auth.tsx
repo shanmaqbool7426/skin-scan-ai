@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -29,12 +30,33 @@ export default function AuthScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
+  const handleSocialComingSoon = () => {
+    Alert.alert(
+      "Coming Soon",
+      "Social sign-in with Google and Apple is currently in development.",
+      [{ text: "OK" }]
+    );
+  };
+
   const handleAuth = async () => {
     if (!email || !password) {
       setErrorMsg("Please fill in all fields.");
       return;
     }
-    if (tab === "register" && !name) {
+
+    const trimmedEmail = email.trim();
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (tab === "register" && !name.trim()) {
       setErrorMsg("Please provide your name.");
       return;
     }
@@ -44,7 +66,9 @@ export default function AuthScreen() {
 
     try {
       const endpoint = tab === "login" ? "/api/auth/login" : "/api/auth/register";
-      const payload = tab === "login" ? { email, password } : { name, email, password };
+      const payload = tab === "login" 
+        ? { email: trimmedEmail, password } 
+        : { name: name.trim(), email: trimmedEmail, password };
       
       const res = await fetch(`${BASE_URL}${endpoint}`, {
         method: "POST",
@@ -63,7 +87,7 @@ export default function AuthScreen() {
       await setIsLoggedIn(true);
       router.replace("/(tabs)");
     } catch (err: any) {
-      setErrorMsg(err.message);
+      setErrorMsg(err.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -130,11 +154,11 @@ export default function AuthScreen() {
       </View>
 
       {/* Social buttons */}
-      <TouchableOpacity style={styles.socialBtn} onPress={handleAuth} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.socialBtn} onPress={handleSocialComingSoon} activeOpacity={0.85}>
         <Ionicons name="logo-google" size={18} color="#E2EEFF" />
         <Text style={styles.socialBtnText}>Continue with Google</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.socialBtn, styles.socialBtnApple]} onPress={handleAuth} activeOpacity={0.85}>
+      <TouchableOpacity style={[styles.socialBtn, styles.socialBtnApple]} onPress={handleSocialComingSoon} activeOpacity={0.85}>
         <Ionicons name="logo-apple" size={18} color="#000" />
         <Text style={[styles.socialBtnText, { color: "#000" }]}>Continue with Apple</Text>
       </TouchableOpacity>
