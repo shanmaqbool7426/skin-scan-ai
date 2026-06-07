@@ -7,6 +7,7 @@ import {
   Image,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -105,6 +106,16 @@ export default function ScanResultsScreen() {
 
   const products = getRecommendedProducts(latestScan.issues, latestScan.skinType);
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `My GlowAI Skin Health Score is ${latestScan.glowScore}/100! 🌟\n\nSkin Type: ${latestScan.skinType}\nHydration: ${latestScan.hydration}%\nClarity: ${latestScan.clarity}%\nSmoothness: ${latestScan.smoothness}%\n\nGet your professional AI skin analysis with GlowAI today!`,
+      });
+    } catch (error) {
+      console.error("Share error:", error);
+    }
+  };
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -123,7 +134,9 @@ export default function ScanResultsScreen() {
             <Text style={[styles.headerSub, { color: colors.success }]}>Analysis Complete</Text>
           </View>
         </View>
-        <View style={{ width: 38 }} />
+        <TouchableOpacity onPress={handleShare} style={styles.backBtn}>
+          <Ionicons name="share-social-outline" size={18} color={colors.foreground} />
+        </TouchableOpacity>
       </View>
 
       {/* Score Card */}
@@ -134,7 +147,7 @@ export default function ScanResultsScreen() {
             <Text style={[styles.scoreLabel, { color: colors.mutedForeground }]}>Skin Health Score</Text>
             <Text style={[styles.scoreSub, { color: colors.mutedForeground }]}>{latestScan.date}</Text>
             <View style={styles.detectedRow}>
-              <Text style={[styles.detectedNum, { color: colors.primary }]}>{latestScan.issues.length}</Text>
+              <Text style={[styles.detectedNum, { color: colors.primary }]}>{latestScan.issues?.length || 0}</Text>
               <Text style={[styles.detectedLabel, { color: colors.mutedForeground }]}> Issues Found</Text>
             </View>
             <TouchableOpacity onPress={() => router.push("/heatmap")} activeOpacity={0.85}>

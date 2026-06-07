@@ -83,7 +83,7 @@ function MiniLineChart({ data }: { data: { week: string; score: number }[] }) {
 const PERIOD_TABS = ["7D", "1M", "3M", "1Y"];
 
 export default function ProgressScreen() {
-  const { scans, latestScan } = useApp();
+  const { scanHistory: scans = [], latestScan } = useApp();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [activePeriod, setActivePeriod] = useState("1M");
